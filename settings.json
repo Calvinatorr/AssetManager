@@ -1,0 +1,10 @@
+{
+	"packages":
+	[
+        {"Maya": "D:\\Software\\Maya2017\\bin\\maya.exe"},
+        {"3ds Max": ""},
+        {"Blender": "D:\\Software\\Blender\\blender.exe"},
+        {"Houdini": ""},
+        {"Modo": ""}
+	]
+}

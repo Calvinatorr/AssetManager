@@ -1,6 +1,6 @@
 """ Main assset manager window """
 
-import sys, weakref
+import sys, weakref, subprocess
 import qdarkstyle
 
 
@@ -30,6 +30,8 @@ import json
 
 from Asset import *
 from AssetViewer import *
+from Settings import *
+from DCC import *
 
 
 class AssetListView(QTreeWidget):
@@ -120,23 +122,6 @@ class AssetListView(QTreeWidget):
             self.AddAsset(a)
 
 
-class KeyDataLabel(QWidget):
-    """ Key & data """
-
-    def __init__(self, label="", data=None):
-        super(KeyDataLabel, self).__init__()
-
-        self.setLayout(QHBoxLayout())
-        self.layout().setAlignment(Qt.AlignLeft)
-
-        self.label = QLabel(label)
-        self.data = QLabel(str(data))
-
-        self.layout().addWidget(self.label)
-        self.layout().addWidget(self.data)
-
-
-
 class AssetDataView(QScrollArea):
     """ Widget for asset data """
 
@@ -186,6 +171,7 @@ class AssetDataView(QScrollArea):
                 self.dataWidget.layout().addWidget(label)
 
 
+
 class MainWindow(QMainWindow):
     """ Main window class - will generate PySide dialog & OpenGL context """
 
@@ -208,6 +194,31 @@ class MainWindow(QMainWindow):
         self.centralWidget().setLayout(centralLayout)
 
 
+        #self.addToolBar("File")
+        menuBar = self.menuBar()
+        fileMenu = menuBar.addMenu('&File')
+        self.openSettings = QAction("&Settings", self)
+        self.openSettings.triggered.connect(SettingsWindow.ShowUI)
+        menuBar.addAction(self.openSettings)
+
+
+        toolBar = self.addToolBar("&Tools")
+        dccAction = QAction("Open DCC", self)
+        dccAction.setShortcut("Ctrl+Shift+D")
+        dccAction.setStatusTip("Open DCC package")
+        dccAction.triggered.connect(self.OpenDCC)
+        toolBar.addAction(dccAction)
+
+        self.selectDCC = QComboBox()
+        #self.selectDCC.addItem(QIcon(), "Blender")
+        for key, value in DCCManager.packages.items():
+            if os.path.isfile(value):
+                self.selectDCC.addItem(GetAssociationIconFromFile(value), key)
+
+        toolBar.addWidget(self.selectDCC)
+
+
+
         self.assetListView = AssetListView(AssetManager.assets)
         self.assetDataView = AssetDataView(self.assetListView)
         self.assetViewer = AssetViewer()
@@ -222,7 +233,8 @@ class MainWindow(QMainWindow):
         centralLayout.addWidget(splitter)
         #centralLayout.addWidget(self.assetViewer)
 
-
+    def OpenDCC(self):
+        subprocess.Popen(DCCManager.packages[self.selectDCC.currentText()])
 
 
 

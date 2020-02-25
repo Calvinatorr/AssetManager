@@ -25,7 +25,7 @@ class Asset(object):
         try:
             file = open(filename, "r+")
             self.data.update({
-                "size" : os.path.getsize(filename)/1024,
+                "size" : str(round(os.path.getsize(filename)/1024, 2)) + " mb",
                 "created" : self._FormatTimeStamp(os.path.getctime(filename)),
                 "modified" : self._FormatTimeStamp(os.path.getmtime(filename)),
                 "accessed" : self._FormatTimeStamp(os.path.getatime(filename))
