@@ -1,10 +1,19 @@
 {
-	"packages":
-	[
-        {"Maya": "D:\\Software\\Maya2017\\bin\\maya.exe"},
-        {"3ds Max": ""},
-        {"Blender": "D:\\Software\\Blender\\blender.exe"},
-        {"Houdini": ""},
-        {"Modo": ""}
-	]
+    "packages": [
+        {
+            "3ds Max": "D:\\Software\\Autodesk\\3ds Max 2019\\3dsmax.exe"
+        },
+        {
+            "Blender": "D:\\Software\\Blender\\blender.exe"
+        },
+        {
+            "Houdini": "D:\\Software\\Side Effects Software\\Houdini18.0.287\\bin\\houdinifx.exe"
+        },
+        {
+            "Maya": "D:\\Software\\Maya2017\\bin\\maya.exe"
+        },
+        {
+            "Modo": ""
+        }
+    ]
 }

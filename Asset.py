@@ -25,7 +25,7 @@ class Asset(object):
         try:
             file = open(filename, "r+")
             self.data.update({
-                "size" : str(round(os.path.getsize(filename)/1024, 2)) + " mb",
+                "size" : os.path.getsize(filename),
                 "created" : self._FormatTimeStamp(os.path.getctime(filename)),
                 "modified" : self._FormatTimeStamp(os.path.getmtime(filename)),
                 "accessed" : self._FormatTimeStamp(os.path.getatime(filename))
@@ -44,6 +44,29 @@ class Asset(object):
     def GetData(self):
         return self.data
 
+
+    def GetSizeString(self):
+        sizeStr = ""
+        size = float(self.data["size"])
+        kb = size / 1024
+        if kb > 1024:
+            sizeStr = str(round(kb / 1024, 2)) + " MB"
+        else:
+            sizeStr = str(round(kb, 2))+" KB"
+        return sizeStr
+
+
+    def GetSimpleData(self):
+        data = [
+            self.GetBaseName(),
+            type(self).__name__,
+            self.GetFileType().upper(),
+            self.GetSizeString(),
+            str(self.data["created"].date()),
+            str(self.data["modified"].date())
+        ]
+        data.append(str(id(self)))
+        return data
 
     def GetBaseName(self):
         s = os.path.basename(self.filename)

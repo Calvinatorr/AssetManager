@@ -31,13 +31,14 @@ import json
 from Asset import *
 from AssetViewer import *
 from Settings import *
+from SettingsWindow import *
 from DCC import *
 
 
 class AssetListView(QTreeWidget):
     """ List view for all assets """
 
-    _headers = ["Asset", "Type", "File Type", "$weakref"]
+    _headers = ["Asset", "Type", "File Type", "Size", "Created", "Modified", "$weakref"]
 
     def GetLastColumnIndex(self):
         return len(self._headers)-1
@@ -60,7 +61,7 @@ class AssetListView(QTreeWidget):
         # Set column widths
         self.setColumnWidth(0, 256)
         for i in range(1, self.GetLastColumnIndex()):
-            self.setColumnWidth(i, 48)
+            self.setColumnWidth(i, 64)
 
         # Set up resize policy
         '''
@@ -100,16 +101,11 @@ class AssetListView(QTreeWidget):
         #if not type(asset) is Asset or not issubclass(asset, Asset):
         #    return
 
-        data = [
-            asset.GetBaseName(),
-            type(asset).__name__,
-            asset.GetFileType(),
-            str(id(asset))
-         ]
+        data = asset.GetSimpleData()
         item = QTreeWidgetItem(self, data)
         icon = QIcon()
         self._assetWeakRefDict[id(asset)] = asset
-        #item.setIcon(0, icon)
+        item.setIcon(0, GetAssociationIconFromFile(asset.filename))
 
 
     def AddAssets(self, assets=[]):
@@ -183,7 +179,7 @@ class MainWindow(QMainWindow):
         #self.setFlags(self.flags() ^ Qt.WindowContextHelpButtonHint)  # Hide help
         self.resize(1280, 720)
         #self.setGeometry(600, 300, 450, 350)
-        #stdIcon = self.style().standardIcon
+        stdIcon = self.style().standardIcon
         self.show()  # Show early
 
 
@@ -198,7 +194,7 @@ class MainWindow(QMainWindow):
         menuBar = self.menuBar()
         fileMenu = menuBar.addMenu('&File')
         self.openSettings = QAction("&Settings", self)
-        self.openSettings.triggered.connect(SettingsWindow.ShowUI)
+        self.openSettings.triggered.connect(self._ShowSettings)
         menuBar.addAction(self.openSettings)
 
 
@@ -210,10 +206,25 @@ class MainWindow(QMainWindow):
         toolBar.addAction(dccAction)
 
         self.selectDCC = QComboBox()
-        #self.selectDCC.addItem(QIcon(), "Blender")
         for key, value in DCCManager.packages.items():
             if os.path.isfile(value):
-                self.selectDCC.addItem(GetAssociationIconFromFile(value), key)
+                item = self.selectDCC.addItem(GetAssociationIconFromFile(value), key)
+
+        """self.selectDCC = QToolButton()
+        self.selectDCC.setPopupMode(QToolButton.MenuButtonPopup)
+        self.selectDCC.setToolTip("Open DCC")
+        self.selectDCC.setMenu(QMenu(self.selectDCC))
+        for key, value in DCCManager.packages.items():
+            if os.path.isfile(value):
+                action = QWidgetAction(self.selectDCC)
+                button = QToolButton()
+                button.setIcon(GetAssociationIconFromFile(value))
+                button.setToolTip(key)
+                button.setText(key)
+                button.clicked.connect(self.OpenDCC)
+                action.setDefaultWidget(button)
+                self.selectDCC.menu().addAction(action)"""
+
 
         toolBar.addWidget(self.selectDCC)
 
@@ -233,8 +244,12 @@ class MainWindow(QMainWindow):
         centralLayout.addWidget(splitter)
         #centralLayout.addWidget(self.assetViewer)
 
+
     def OpenDCC(self):
         subprocess.Popen(DCCManager.packages[self.selectDCC.currentText()])
+
+    def _ShowSettings(self):
+        SettingsWindow.ShowUI(self)
 
 
 

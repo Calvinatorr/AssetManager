@@ -6,6 +6,9 @@ except ImportError:
     import _winreg as winreg
 
 
+from Settings import *
+
+
 class DCCManager:
     """ Manager for DCC packages """
 
@@ -13,10 +16,9 @@ class DCCManager:
 
     @staticmethod
     def LoadPathsFromSettings():
-        with open("settings.json", "r") as file:
-            data = json.load(file)
-            for d in data["packages"]:
-                DCCManager.packages.update(d)
+        settings = GetSettingsJson()
+        for d in settings["packages"]:
+            DCCManager.packages.update(d)
 
 
 # Load from JSON file
