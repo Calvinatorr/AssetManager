@@ -21,7 +21,7 @@ class Asset(object):
     def ImportData(self, filename=""):
         """ Import all data from file """
 
-        self.filename = filename
+        self.filename = os.path.normpath(filename)
         try:
             file = open(filename, "r+")
             self.data.update({
@@ -116,10 +116,12 @@ class AssetManager:
 
 
     @staticmethod
-    def ImportFromDirectory(directory):
+    def ImportFromDirectory(dir, clear=False):
         """ Import assets from directory """
 
-        dir = "E:\Documents\PostUniversity\ProjectLPLateV2\Art\Environment\City\\"
+        if clear:
+            AssetManager.assets.clear()
+
         for filename in os.listdir(dir):
             fullname = os.path.join(dir, filename)
             if os.path.isfile(fullname):
@@ -146,7 +148,8 @@ class AssetManager:
                 AssetManager.assets.append(a)
 
 
-AssetManager.ImportFromDirectory("E:\Documents\PostUniversity\ProjectLPLateV2\Art\Environment\City\\")
+
+#AssetManager.ImportFromDirectory("E:\Documents\PostUniversity\ProjectLPLateV2\Art\Environment\City\\")
 
 
 if __name__ == '__main__':

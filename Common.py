@@ -15,6 +15,11 @@ except ImportError:
         assert ("Failed to import PySide & PySide2")
 
 
+
+import shlex, winreg
+
+
+
 def GetMainWindow():
     return None
 
@@ -32,6 +37,13 @@ def GetAssociationIconFromFile(path=""):
     icon = QFileIconProvider().icon(QFileInfo(path))
     return icon
 
+
+def GetDefaultApp(ext):
+    """ Get path to default app for extension """
+    class_root = winreg.QueryValue(winreg.HKEY_CLASSES_ROOT, ext)
+    with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, r'{}\shell\open\command'.format(class_root)) as key:
+        command = winreg.QueryValueEx(key, '')[0]
+        return shlex.split(command)[0]
 
 
 class _GCProtector(object):

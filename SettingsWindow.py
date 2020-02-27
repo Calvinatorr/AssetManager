@@ -158,17 +158,21 @@ class SettingsWindow(QDialog):
         self.setWindowIcon(QIcon(stdIcon(QStyle.SP_ComputerIcon)))
         self.show()  # Show early
 
+
+        # Init tabs
+        self.tabs = QTabWidget()
         self.setLayout(QVBoxLayout())
+        self.layout().addWidget(self.tabs)
+
+        newTab = self._AddTab("DCCs")
         self.pathsToDCC = PathsToDCC()
-        self.layout().addWidget(QLabel("Registered DCC paths"))
-        self.layout().addWidget(self.pathsToDCC)
-
-
+        newTab.layout().addWidget(QLabel("Registered DCC paths"))
+        newTab.layout().addWidget(self.pathsToDCC)
 
         # Buttons in row
         buttons = QWidget()
         buttons.setLayout(QHBoxLayout())
-        self.layout().addWidget(buttons)
+        newTab.layout().addWidget(buttons)
 
         # Save button
         self.saveButton = QPushButton()
@@ -183,6 +187,13 @@ class SettingsWindow(QDialog):
         self.resetButton.setToolTip("Reset settings to saved from JSON settings file")
         self.resetButton.clicked.connect(self.ResetSettings) # Reset UI & data in memory
         buttons.layout().addWidget(self.resetButton)
+
+
+    def _AddTab(self, title=""):
+        newTab = QWidget()
+        newTab.setLayout(QVBoxLayout())
+        self.tabs.addTab(newTab, title)
+        return newTab
 
 
     def UpdateSettingsJson(self):

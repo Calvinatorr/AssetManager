@@ -63,18 +63,6 @@ class AssetListView(QTreeWidget):
         for i in range(1, self.GetLastColumnIndex()):
             self.setColumnWidth(i, 64)
 
-        # Set up resize policy
-        '''
-        try: #PySide2 first
-            self.header().setSectionResizeMode(0, QHeaderView.Stretch)
-            #for i in range(1, self.GetLastColumnIndex()+1):
-            #    self.header().setSectionResizeMode(i, QHeaderView.Fixed)
-        except: # PySide fallback
-            self.header().setResizeMode(0, QHeaderView.Stretch)
-            #for i in range(1, self.GetLastColumnIndex()+1):
-            #    self.header().setResizeMode(i, QHeaderView.Fixed)
-        '''
-
         #self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff) # Never add a horizontal scrolling bar
         self.header().setSortIndicator(0, Qt.AscendingOrder)    # Always sort by ascending order, defaults to reverse
         self.hideColumn(self.GetLastColumnIndex())              # Hide ref column
@@ -82,16 +70,64 @@ class AssetListView(QTreeWidget):
         # Add selected nodes
         self.AddAssets(assets) # We also sort the table within this function
 
-        self.setEditTriggers(QTreeWidget.NoEditTriggers)
+        self.setEditTriggers(QAbstractItemView.DoubleClicked)
         #self.setSelectionMode(QTreeWidget.ExtendedSelection)
+
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.OpenContextMenu)
+
+
+    def OpenContextMenu(self, position):
+        self.cursorPosition = position
+        item = self.itemAt(self.cursorPosition)
+        indexes = self.selectedIndexes()
+        if len(indexes) > 0:
+            level = 0
+            index = indexes[0]
+            while index.parent().isValid():
+                index = index.parent()
+                level += 1
+
+            # Create context menu
+            self.menu = QMenu()
+
+            open = QAction("Open file", self)
+            open.setIcon(GetAssociationIconFromFile(self.GetAssetFromItem(item).filename))
+            open.triggered.connect(self._OpenFile)
+            self.menu.addAction(open)
+
+            openInExplorer = QAction("Open in explorer", self)
+            openInExplorer.setIcon(QIcon(self.style().standardIcon(QStyle.SP_DialogOpenButton)))
+            openInExplorer.triggered.connect(self._OpenInExplorer)
+            self.menu.addAction(openInExplorer)
+
+            self.menu.exec_(self.viewport().mapToGlobal(self.cursorPosition))
+
+
+    def _OpenFile(self):
+        item = self.itemAt(self.cursorPosition)
+        asset = self.GetAssetFromItem(item)
+        os.system(asset.filename)
+
+    def mouseDoubleClickEvent(self, event:QMouseEvent):
+        self.cursorPosition = event.pos()
+        self._OpenFile()
+
+    def _OpenInExplorer(self):
+        item = self.itemAt(self.cursorPosition)
+        asset = self.GetAssetFromItem(item)
+        subprocess.Popen(r'explorer /select,"{}"'.format(os.path.normpath(asset.filename)))
+
+
+    def GetAssetFromItem(self, item):
+        id = int(item.data(self.GetLastColumnIndex(), 0))
+        return self._assetWeakRefDict[id]
 
 
     def GetSelected(self):
         assets = []
         for item in self.selectedItems():
-            id = int(item.data(self.GetLastColumnIndex(), 0))
-            a = self._assetWeakRefDict[id]
-            assets.append(a)
+            assets.append(self.GetAssetFromItem(item))
         return assets
 
 
@@ -108,14 +144,22 @@ class AssetListView(QTreeWidget):
         item.setIcon(0, GetAssociationIconFromFile(asset.filename))
 
 
-    def AddAssets(self, assets=[]):
+    def AddAssets(self, assets=[], clear=False):
         """ Add list of assets to list view (update) """
+
+        if clear:
+            self.ClearAssets()
 
         if len(assets) <= 0:
             return
 
         for a in assets:
             self.AddAsset(a)
+
+
+    def ClearAssets(self):
+        self.clear()
+        self._assetWeakRefDict.clear()
 
 
 class AssetDataView(QScrollArea):
@@ -126,6 +170,8 @@ class AssetDataView(QScrollArea):
 
         self.setLayout(QVBoxLayout())
         self.layout().setAlignment(Qt.AlignTop)
+        self.layout().setSpacing(0)
+        self.layout().setContentsMargins(0,0,0,0)
 
         self.listView = listView
         self.dataWidget = QWidget()
@@ -171,6 +217,7 @@ class AssetDataView(QScrollArea):
 class MainWindow(QMainWindow):
     """ Main window class - will generate PySide dialog & OpenGL context """
 
+
     def __init__(self, parent=GetMainWindow()):
         super(MainWindow, self).__init__(parent)
 
@@ -199,16 +246,18 @@ class MainWindow(QMainWindow):
 
 
         toolBar = self.addToolBar("&Tools")
+
+        # Select DCC action
+        self.selectDCC = QComboBox()
+        toolBar.addWidget(self.selectDCC)
+        for key, value in DCCManager.packages.items():
+            if os.path.isfile(value):
+                item = self.selectDCC.addItem(GetAssociationIconFromFile(value), key)
         dccAction = QAction("Open DCC", self)
         dccAction.setShortcut("Ctrl+Shift+D")
         dccAction.setStatusTip("Open DCC package")
         dccAction.triggered.connect(self.OpenDCC)
         toolBar.addAction(dccAction)
-
-        self.selectDCC = QComboBox()
-        for key, value in DCCManager.packages.items():
-            if os.path.isfile(value):
-                item = self.selectDCC.addItem(GetAssociationIconFromFile(value), key)
 
         """self.selectDCC = QToolButton()
         self.selectDCC.setPopupMode(QToolButton.MenuButtonPopup)
@@ -225,9 +274,17 @@ class MainWindow(QMainWindow):
                 action.setDefaultWidget(button)
                 self.selectDCC.menu().addAction(action)"""
 
+        # Open directory action
+        openDirectory = QToolButton(parent=self)
+        openDirectory.setIcon(QIcon(stdIcon(QStyle.SP_DialogOpenButton)))
+        self.currentDirectory = ""
+        openDirectory.clicked.connect(self._SearchForDirectory)
+        toolBar.addWidget(openDirectory)
 
-        toolBar.addWidget(self.selectDCC)
-
+        clear = QToolButton(parent=self)
+        clear.setIcon(QIcon(stdIcon(QStyle.SP_DirClosedIcon)))
+        clear.clicked.connect(self._CloseDirectory)
+        toolBar.addWidget(clear)
 
 
         self.assetListView = AssetListView(AssetManager.assets)
@@ -242,11 +299,31 @@ class MainWindow(QMainWindow):
         splitter.addWidget(self.assetDataView)
         splitter.addWidget(self.assetViewer)
         centralLayout.addWidget(splitter)
-        #centralLayout.addWidget(self.assetViewer)
 
 
     def OpenDCC(self):
         subprocess.Popen(DCCManager.packages[self.selectDCC.currentText()])
+
+
+    def _SearchForDirectory(self):
+        dir = ""
+        try:
+            dir = QFileDialog.getExistingDirectory(self, "Open directory", self.currentDirectory or QDir.currentPath())
+        except:
+            pass
+        if dir and os.path.isdir(dir):
+            self.currentDirectory = dir
+            self._OpenDirectory()
+
+
+    def _OpenDirectory(self):
+        if self.currentDirectory and os.path.isdir(self.currentDirectory):
+            AssetManager.ImportFromDirectory(self.currentDirectory, clear=True)
+            self.assetListView.AddAssets(AssetManager.assets, clear=True)
+
+    def _CloseDirectory(self):
+        self.assetListView.ClearAssets()
+
 
     def _ShowSettings(self):
         SettingsWindow.ShowUI(self)
