@@ -33,7 +33,7 @@ from AssetViewer import *
 from Settings import *
 from SettingsWindow import *
 from DCC import *
-
+from TextureViewer import *
 
 class AssetListView(QTreeWidget):
     """ List view for all assets """
@@ -207,10 +207,12 @@ class AssetDataView(QScrollArea):
                 self.dataWidget.layout().addWidget(KeyDataLabel( displayKey + ": ", d))
 
             if type(asset) is Texture:
-                label = QLabel()
-                pixmap = QPixmap(asset.filename)
+                self.dataWidget.layout().addWidget(TextureViewer(QPixmap(asset.filename)))
+                """label = QLabel()
+                pixmap = QPixmap(asset.filename)\
                 label.setPixmap(pixmap)
-                self.dataWidget.layout().addWidget(label)
+                self.dataWidget.layout().addWidget(label)"""
+
 
 
 
@@ -289,7 +291,7 @@ class MainWindow(QMainWindow):
 
         self.assetListView = AssetListView(AssetManager.assets)
         self.assetDataView = AssetDataView(self.assetListView)
-        self.assetViewer = AssetViewer()
+        self.assetViewer = QWidget()
 
         centralLayout.addWidget(self.assetListView)
 
